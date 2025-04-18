@@ -4,6 +4,23 @@ from heapq import heappush, heappop
 from typing import List, Tuple, Dict, Set
 import time
 from rware.warehouse import Warehouse, RewardType, Action, Direction
+import matplotlib.pyplot as plt
+
+
+# class Agent(Entity):
+#     counter = 0
+
+#     def __init__(self, x: int, y: int, dir_: Direction, msg_bits: int):
+#         Agent.counter += 1
+#         super().__init__(Agent.counter, x, y)
+#         self.dir = dir_
+#         self.message = np.zeros(msg_bits)
+#         self.req_action: Optional[Action] = None
+#         self.carrying_shelf: Optional[Shelf] = None
+#         self.canceled_action = None
+#         self.has_delivered = False
+        
+        
 
 
 # now the path found by the aStar function is correct ,
@@ -23,7 +40,7 @@ class Node:
 def manhattan_distance(pos1: Tuple[int, int], pos2: Tuple[int, int]) -> float:
     return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
-def get_neighbors(pos: Tuple[int, int], grid_size: Tuple[int, int], obstacles: Set[Tuple[int, int]]) -> List[Tuple[int, int]]:
+def get_neighbors(pos, grid_size, obstacles):
     x, y = pos
     neighbors = []
     
@@ -39,10 +56,18 @@ def get_neighbors(pos: Tuple[int, int], grid_size: Tuple[int, int], obstacles: S
     
     return neighbors
 
-def a_star(start: Tuple[int, int], goal: Tuple[int, int], grid_size: Tuple[int, int], 
-           obstacles: Set[Tuple[int, int]]) -> List[Tuple[int, int]]:
+def a_star(start, goal, grid_size, obstacles):
     """
     Implement A* pathfinding algorithm
+    Parameters:
+    - start: Starting position (x, y)
+    - goal: Goal position (x, y)
+    - grid_size: Size of the grid (height, width)
+    - obstacles: Set of obstacle positions (x, y)
+    - carrying_shelf: True/False
+    
+    Returns:
+    - List of positions [(x1, y1), (x2, y2), ...] representing the path from start to goal
     """
     start_node = Node(start, 0, manhattan_distance(start, goal))
     open_list = [start_node]
@@ -82,11 +107,18 @@ def a_star(start: Tuple[int, int], goal: Tuple[int, int], grid_size: Tuple[int, 
 
     return []  # No path found
 
-def get_obstacles(env) -> Set[Tuple[int, int]]:
+def get_obstacles(env):
     """
     Get positions of shelves and other obstacles
     """
     obstacles = set()
+    # assume dealing with only one agent for now
+    agent = env.agents[0]
+    
+    # if agent is not carrying a shelf, there are no obstacles
+    if agent.carrying_shelf is None:
+        return set()
+    
     
     # Get shelf positions from the environment grid
     
@@ -96,8 +128,6 @@ def get_obstacles(env) -> Set[Tuple[int, int]]:
     for shelf in shelf_array:
         obstacles.add((shelf.x, shelf.y))
     
-    # print("Obstacles:",obstacles)
-    # input("Press Enter to continue...")
     return obstacles
 
 def get_action_from_calculated_path(current_pos, next_pos,agent):
@@ -118,6 +148,17 @@ def get_action_from_calculated_path(current_pos, next_pos,agent):
 
 
     """
+    
+    "Full action transition , from pos to next_pos"
+    
+    """
+    1. Turn the agent to the desired direction
+    2. Move forward
+    
+    """
+    
+    
+    actions = []
     current_direction = agent.dir.value
     # debug ! 
     # Calculate desired direction based on position difference
@@ -135,56 +176,79 @@ def get_action_from_calculated_path(current_pos, next_pos,agent):
     
     # If already facing the desired direction, move forward
     if current_direction == desired_direction:
-        return Action.FORWARD.value
-    
+        
+        actions.append(Action.FORWARD.value)
+        return actions
+
+
     # Need to turn - figure out which way
     if current_direction == Direction.UP.value:
         if desired_direction == Direction.RIGHT.value:
             agent.dir = Direction.RIGHT
-            return [Action.RIGHT.value,Action.FORWARD.value]
+            actions.append(Action.RIGHT.value)
+            
         elif desired_direction == Direction.LEFT.value:
             agent.dir = Direction.LEFT
-            return [Action.LEFT.value,Action.FORWARD.value]
+            actions.append(Action.LEFT.value)
+            
         elif desired_direction == Direction.DOWN.value:
             agent.dir = Direction.DOWN
-            return [Action.RIGHT.value,Action.RIGHT.value]
-    
+            actions.append(Action.RIGHT.value)
+            actions.append(Action.RIGHT.value)
+            
+                
     elif current_direction == Direction.DOWN.value:
         if desired_direction == Direction.RIGHT.value:
             agent.dir = Direction.RIGHT
-            return [Action.LEFT.value,Action.FORWARD.value]
+            actions.append(Action.LEFT.value)
+            
         elif desired_direction == Direction.LEFT.value:
             agent.dir = Direction.LEFT
-            return [Action.RIGHT.value,Action.FORWARD.value]
+            actions.append(Action.RIGHT.value)
+            
         elif desired_direction == Direction.UP.value:
             agent.dir = Direction.UP
-            return [Action.RIGHT.value,Action.RIGHT.value]
+            actions.append(Action.RIGHT.value)
+            actions.append(Action.RIGHT.value)
     
     elif current_direction == Direction.LEFT.value:
         if desired_direction == Direction.RIGHT.value:
             agent.dir = Direction.RIGHT
-            return [Action.RIGHT.value,Action.RIGHT.value]
+            actions.append(Action.LEFT.value)
+            actions.append(Action.LEFT.value)
+            
         elif desired_direction == Direction.DOWN.value:
             agent.dir = Direction.DOWN
-            return [Action.LEFT.value,Action.FORWARD.value]
+            actions.append(Action.LEFT.value)
+            
         elif desired_direction == Direction.UP.value:
             agent.dir = Direction.UP
-            return [Action.RIGHT.value,Action.FORWARD.value]
-    
+            actions.append(Action.RIGHT.value)    
+            
     elif current_direction == Direction.RIGHT.value:
         if desired_direction == Direction.LEFT.value:
             agent.dir = Direction.LEFT
-            return [Action.RIGHT.value,Action.RIGHT.value]
+            actions.append(Action.LEFT.value)
+            actions.append(Action.LEFT.value)
+            
+            
         elif desired_direction == Direction.DOWN.value:
             agent.dir = Direction.DOWN
-            return [Action.RIGHT.value,Action.FORWARD.value]
+            actions.append(Action.RIGHT.value)
+            
         elif desired_direction == Direction.UP.value:
             agent.dir = Direction.UP
-            return[Action.LEFT.value,Action.FORWARD.value]
+            actions.append(Action.LEFT.value)
+    
+    actions.append(Action.FORWARD.value)
+    
+    return actions
+    
+    
         
         
 def visualize_paths(paths, current_pos, goals, obstacles, grid_size):
-    import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots(figsize=(8,8))
         
     # Plot obstacles
@@ -211,114 +275,184 @@ def visualize_paths(paths, current_pos, goals, obstacles, grid_size):
     ax.set_title('A* Pathfinding Visualization')
     plt.show(block=False)        
         
+def find_nearest_shelf_with_object(env, current_pos):
+    """
+    Find the nearest shelf that has an object (is in request queue)
+    """
+    shelves = env.shelfs
+    request_queue = env.request_queue
+    
+    # Filter shelves that are in the request queue (target shelves to bring to goal point)
+    requested_shelves = [shelf for shelf in shelves if shelf in request_queue]
+    
+    if not requested_shelves:
+        return None
+        
+    # Find the nearest requested shelf using Manhattan distance
+    nearest_shelf = min(requested_shelves, key=lambda s: manhattan_distance(current_pos, (s.x, s.y)))
+    return nearest_shelf
+
 def run_warehouse_with_astar():
+    
+    agent_state = 1 
     # Create environment
     env = Warehouse(1, 4, 3, 1, 0, 1, 5, None, None, RewardType.GLOBAL)
     obs, info = env.reset()
-
-    # Get obstacles
-    obstacles = get_obstacles(env)
     
     # Get goal positions from environment
     goals = env.goals 
-
-    # Get initial agent position and calculate path
     agent = env.agents[0]  # Only using first agent
     current_pos = (agent.x, agent.y)
-    
-    print("Starting Position:",current_pos)
     current_direction = agent.dir.value
     
-    # save the current direction, as it will be changed in the get_action_from_calculated_path function
-    print("Starting Direction:",current_direction)
-    
-    # Find path to nearest goal
-    # Find path to nearest goal using Manhattan distance
-    nearest_goal = min(goals, key=lambda g: manhattan_distance(current_pos, g))
-    path = a_star(current_pos, nearest_goal, env.grid_size, obstacles)
-    valid_paths = [path] if path else []  # Keep same format for visualization
-
-    if not valid_paths:
-        print("No valid path found!")
-        return
+    moving_to_goal = False
         
-    # Get the shortest valid path
-    path = min(valid_paths, key=len)
-    print(f"Found path of length {len(path)}: {path}")
-        # Call visualization function
-    # visualize_paths(valid_paths, current_pos, goals, obstacles, env.grid_size)
+    # saved point for shelf 
+    saved_shelf_pos = None
     
-    # Convert path to series of actions
-    action_sequence = []
-    
-    for i in range(len(path)-1):
-        pos = path[i]
-        next_pos = path[i+1]
-        action = get_action_from_calculated_path(pos, next_pos,agent)
-        if type(action) == list:
-            for a in action:
-                action_sequence.append(a)
-        else:
-            action_sequence.append(action)
-
-   
     # Action Enum 
-    # NOOP = 0
-    # FORWARD = 1
-    # LEFT = 2
-    # RIGHT = 3
-    
-    # for toggle load , we ignore it first, now goal is to find a path from initialised position to goal 
-    # TOGGLE_LOAD = 4
-
-    
-    # Translate numerical actions to readable format
-    action_names = {
-        0: 'NOOP',
-        1: 'FORWARD', 
-        2: 'LEFT',
-        3: 'RIGHT',
-        4: 'TOGGLE_LOAD'
-    }
-    
-    direction_names = {
-        0: 'UP',
-        1: 'DOWN',
-        2: 'LEFT',
-        3: 'RIGHT'
-    }
-    
-    readable_actions = [action_names[a] for a in action_sequence]
-    print("Action Sequence (numeric):", action_sequence)
-    print("Action Sequence (readable):", readable_actions)
-    
-    
-    # Set agent direction to the initial direction
-    agent.dir = Direction(current_direction)
-    print("Agent Starting Direction Reset:",agent.dir.value)
-    
-    # Execute action sequence
-    for action in action_sequence:
-        actions = [Action.NOOP.value] * env.n_agents
-        actions[0] = action  # Set action for first agent
-        print("Action:",action_names[action])
-       
-        obs, rewards, done, truncated, info = env.step(actions)
-        print("Current Direction:",direction_names[agent.dir.value])
-        env.render()
-        time.sleep(1)
+    action_names = {0: 'NOOP',1: 'FORWARD', 2: 'LEFT',3: 'RIGHT',4: 'TOGGLE_LOAD'}
         
-        # Check if agent reached goal
-        agent_pos = (env.agents[0].x, env.agents[0].y)
-        if agent_pos in goals:
-            print("Agent successfully reached goal!")
+    direction_names = {  0: 'UP',1: 'DOWN',2: 'LEFT',3: 'RIGHT'}    
+    
+    def execute_actions(action_sequence):
+        for action in action_sequence:
+            actions = [Action.NOOP.value] * env.n_agents
+            actions[0] = action
+            print("Action:", action_names[action])
+            obs, rewards, done, truncated, info = env.step(actions)
+            print("Current Direction:", direction_names[agent.dir.value])
+            env.render()
+            time.sleep(1)
+        return obs, info
+    
+    # 4 state for agent . entry point is 1 , and 4 -> 1 
+    
+    # 1 :
+    # Not carrying anyshelf , moving to nearest shelf with load 
+    # 2 :
+    # Carrying shelf with load , moving to goal
+    # 3 :
+    # Reach goal with load 
+    # 4 :
+    # Carrying shelf with without load , moving to shelf location to put back the shelf
+    
+    
+    while True:
+        print("--------------------------------")
+        print("current_pos:",current_pos)
+        print("Current Direction:", current_direction)
+        print("agent dir:",agent.dir.value)
+        obstacles = get_obstacles(env)
+        # If agent is not carrying a shelf, find nearest shelf with object
+        
+        target_pos = None
+    
+        
+        if agent_state == 1:
+            # Not carrying a shelf, moving to nearest shelf with object
             
-            input("Press Enter to continue...")
+            # Find nearest shelf with object
+            target_shelf = find_nearest_shelf_with_object(env, current_pos)
+            if target_shelf:
+                target_pos = (target_shelf.x, target_shelf.y)
+                saved_shelf_pos = target_pos
+                print(f"[STATE 1] Moving to shelf at {target_pos}")
+            else:
+                print("No shelves with objects found!")
+                break
+        elif agent_state == 2:
+            # Carrying a loaded shelf, moving to goal
+
+            target_pos = min(goals, key=lambda g: manhattan_distance(current_pos, (g[0], g[1])))
+            print(f"[STATE 2] Moving to goal at {target_pos}")
+
+        elif agent_state == 3:
+            # At goal with loaded shelf, need upload
             
-        if done:
-            obs, info = env.reset()
-            obstacles = get_obstacles(env)
+            # handle unloading 
+            print(f"[STATE 3] At goal. Unloading shelf...")
+            actions = [Action.NOOP.value] * env.n_agents
+            actions[0] = Action.TOGGLE_LOAD.value
+            env.step(actions)
+            env.render()
+            time.sleep(1)
+            agent_state = 4
+            continue
+            
+        elif agent_state == 4:
+            # Carrying a shelf without load, moving to shelf location to put back the shelf
+            target_pos = (saved_shelf_pos[0], saved_shelf_pos[1])
+            print(f"[STATE 4] Returning shelf to original location at {target_pos}")
+
+        # Find path to target pos 
+        path = a_star(current_pos, target_pos, env.grid_size, obstacles)
+        
+        if not path:
+            print("No valid path found!")
             break
+            
+        print(f"Found path of length {len(path)}: {path}")
+        
+        # Convert path to series of actions
+        action_sequence = []
+        
+        for i in range(len(path)-1):
+            pos = path[i]
+            next_pos = path[i+1]
+            action = get_action_from_calculated_path(pos, next_pos, agent)
+            if type(action) == list:
+                for a in action:
+                    action_sequence.append(a)
+            else:
+                action_sequence.append(action)
+        
+        
+        readable_actions = [action_names[a] for a in action_sequence]
+        print("Action Sequence (readable):", readable_actions)
+        input("Press Enter to continue...")
+        
+        # Set agent direction to the initial direction
+   
+        agent.dir = Direction(current_direction)
+        obs, info = execute_actions(action_sequence)
+
+        current_pos = (agent.x, agent.y)
+        current_direction = agent.dir.value
+
+        if agent_state == 1 and current_pos == target_pos and agent.carrying_shelf is None:
+            print("Reached shelf. Loading...")
+            actions = [Action.NOOP.value] * env.n_agents
+            actions[0] = Action.TOGGLE_LOAD.value
+            env.step(actions)
+            env.render()
+            time.sleep(1)
+            agent_state = 2
+
+        elif agent_state == 2 and current_pos in goals and agent.carrying_shelf:
+            print("Reached goal with shelf. Unloading...")
+            agent_state = 3
+
+        elif agent_state == 4 and current_pos == saved_shelf_pos and agent.carrying_shelf:
+            print("Returned shelf. Unloading...")
+            actions = [Action.NOOP.value] * env.n_agents
+            actions[0] = Action.TOGGLE_LOAD.value
+            env.step(actions)
+            env.render()
+            time.sleep(1)
+            agent_state = 1
+
+        # if done :
+        #     print("Environment done. Resetting...")
+        #     obs, info = env.reset()
+        #     current_pos = (agent.x, agent.y)
+        #     current_direction = agent.dir.value
+        #     agent_state = 1
+        #     saved_shelf_pos = None
+        #     break
+
+        
+
 
 if __name__ == "__main__":
     try:
