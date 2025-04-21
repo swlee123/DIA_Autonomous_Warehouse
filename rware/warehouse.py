@@ -8,10 +8,11 @@ import networkx as nx
 import numpy as np
 
 
-_COLLISION_LAYERS = 2
+_COLLISION_LAYERS = 3
 
 _LAYER_AGENTS = 0
 _LAYER_SHELFS = 1
+_LAYER_OBSTACLES =2 
 
 
 class _VectorWriter:
@@ -136,6 +137,17 @@ class Shelf(Entity):
     def collision_layers(self):
         return (_LAYER_SHELFS,)
 
+class Obstacle(Entity):
+    counter = 0
+
+    def __init__(self, x, y):
+        Obstacle.counter += 1
+        super().__init__(Obstacle.counter, x, y)
+
+    @property
+    def collision_layers(self):
+        return (_LAYER_OBSTACLES,)
+    
 
 class Warehouse(gym.Env):
     metadata = {
@@ -156,6 +168,9 @@ class Warehouse(gym.Env):
         max_steps: Optional[int],
         reward_type: RewardType,
         layout: Optional[str] = None,
+        obstacles_loc  = None,
+    
+        
         observation_type: ObservationType = ObservationType.FLATTENED,
         image_observation_layers: List[ImageLayer] = [
             ImageLayer.SHELVES,
@@ -233,7 +248,8 @@ class Warehouse(gym.Env):
         """
 
         self.goals: List[Tuple[int, int]] = []
-
+        self.obstacles_loc = None if obstacles_loc is None else obstacles_loc
+        
         if not layout:
             self._make_layout_from_params(shelf_columns, shelf_rows, column_height)
         else:
@@ -245,7 +261,7 @@ class Warehouse(gym.Env):
         self.max_inactivity_steps: Optional[int] = max_inactivity_steps
         self.reward_type = reward_type
         self.reward_range = (0, 1)
-
+        
         self._cur_inactive_steps = None
         self._cur_steps = 0
         self.max_steps = max_steps
@@ -324,6 +340,20 @@ class Warehouse(gym.Env):
         for x in range(self.grid_size[1]):
             for y in range(self.grid_size[0]):
                 self.highways[y, x] = int(highway_func(x, y))
+                
+        # create obstacles with red color in grid
+        
+        if self.obstacles_loc is not None:
+            for loc in self.obstacles_loc:
+                x, y = loc
+                # check if the location is within the grid bounds and there is no shelf at that location
+                if 0 <= x < self.grid_size[1] and 0 <= y < self.grid_size[0] and self.grid[_LAYER_SHELFS, y, x] == 0:
+                    self.grid[_LAYER_OBSTACLES, y, x] = 1
+                    # it is not a highway if ther is obstacle right , stul use the function to recalculate 
+                    self.highways[y, x] = int(highway_func(x, y))
+                    
+            
+        
 
     def _make_layout_from_str(self, layout):
         layout = layout.strip()
@@ -716,6 +746,8 @@ class Warehouse(gym.Env):
                 obs["sensors"][i]["shelf_requested"] = [
                     int(self.shelfs[id_ - 1] in self.request_queue)
                 ]
+                
+        # find nerighbouring obstacles: 
 
         return obs
 
@@ -753,6 +785,10 @@ class Warehouse(gym.Env):
 
         for a in self.agents:
             self.grid[_LAYER_AGENTS, a.y, a.x] = a.id
+        
+        if self.obstacles_loc is not None:
+            for o in self.obstacles_loc:
+                self.grid[_LAYER_OBSTACLES, o[1], o[0]] = 1
 
     def reset(self, seed=None, options=None):
         if seed is not None:
@@ -842,6 +878,16 @@ class Warehouse(gym.Env):
                 # this movement can succeed. Cancel it.
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)
+            elif (
+                start != target
+                and self.grid[_LAYER_OBSTACLES, target[1], target[0]]
+
+            ):
+                # no matter what, agent cant pass through obstacles
+                
+                agent.req_action = Action.NOOP
+                G.add_edge(start, start)
+                
             else:
                 G.add_edge(start, target)
 

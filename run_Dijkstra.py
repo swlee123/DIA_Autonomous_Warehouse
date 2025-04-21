@@ -4,6 +4,9 @@ from heapq import heappush, heappop
 from typing import List, Tuple, Dict, Set
 import time
 from rware.warehouse import Warehouse, RewardType, Action, Direction
+import importlib 
+
+
 import matplotlib.pyplot as plt
 
 # basically the implementation is based on the A* algorithm 
@@ -54,6 +57,8 @@ def dijkstra(start, goal, grid_size, obstacles):
     Returns:
     - List of positions [(x1, y1), (x2, y2), ...] representing the path from start to goal
     """
+    
+    # the manhattan distance is not used here in Dijkstra 
     start_node = Node(start, 0, manhattan_distance(start, goal))
     open_list = [start_node]
     closed_set = set()
@@ -112,9 +117,15 @@ def get_obstacles(env):
     
     shelf_array = env.shelfs
 
-    
+    # also add obstacles(obj name), check if obs exist cuz sometimes it is not 
+    if env.obstacles_loc is not None:
+        for loc in env.obstacles_loc:
+            obstacles.add((loc[0], loc[1]))
+            
     for shelf in shelf_array:
         obstacles.add((shelf.x, shelf.y))
+        
+    print("Obstacles:", obstacles)
     
     return obstacles
 
@@ -282,9 +293,14 @@ def find_nearest_shelf_with_object(env, current_pos):
 
 def run_warehouse_with_dijkstra():
     
+
     agent_state = 1 
     # Create environment
-    env = Warehouse(1, 4, 3, 1, 0, 1, 5, None, None, RewardType.GLOBAL)
+    # using params to do so 
+
+    obstacles_loc = [(1, 15)]
+    
+    env = Warehouse(1, 4, 3, 1, 0, 1, 5, None, None, RewardType.GLOBAL,obstacles_loc=obstacles_loc)
     obs, info = env.reset()
     
     # Get goal positions from environment

@@ -66,6 +66,7 @@ _GOAL_COLOR = (60, 60, 60)
 
 _SHELF_PADDING = 2
 
+_OBSTACLE_COLOR = _ORANGE
 
 def get_display(spec):
     """Convert a display specification (such as :0) into an actual Display
@@ -118,6 +119,7 @@ class Viewer(object):
             translation=(-left * scalex, -bottom * scaley), scale=(scalex, scaley)
         )
 
+    # edit here to draw additional object like obstacles,moving humen ... 
     def render(self, env, return_rgb_array=False):
         glClearColor(*_BACKGROUND_COLOR, 0)
         self.window.clear()
@@ -128,6 +130,7 @@ class Viewer(object):
         self._draw_goals(env)
         self._draw_shelfs(env)
         self._draw_agents(env)
+        self._draw_obstacles(env)
 
         if return_rgb_array:
             buffer = pyglet.image.get_buffer_manager().get_color_buffer()
@@ -177,6 +180,37 @@ class Viewer(object):
             )
         batch.draw()
 
+        
+        
+    def _draw_obstacles(self, env):
+        batch = pyglet.graphics.Batch()
+
+        for obs in env.obstacles_loc:
+            # 
+            x, y = obs[0], obs[1]
+            y = self.rows - y - 1  # pyglet rendering is reversed
+
+            batch.add(
+                4,
+                gl.GL_QUADS,
+                None,
+                (
+                    "v2f",
+                    (
+                        (self.grid_size + 1) * x + _SHELF_PADDING + 1,  # TL - X
+                        (self.grid_size + 1) * y + _SHELF_PADDING + 1,  # TL - Y
+                        (self.grid_size + 1) * (x + 1) - _SHELF_PADDING,  # TR - X
+                        (self.grid_size + 1) * y + _SHELF_PADDING + 1,  # TR - Y
+                        (self.grid_size + 1) * (x + 1) - _SHELF_PADDING,  # BR - X
+                        (self.grid_size + 1) * (y + 1) - _SHELF_PADDING,  # BR - Y
+                        (self.grid_size + 1) * x + _SHELF_PADDING + 1,  # BL - X
+                        (self.grid_size + 1) * (y + 1) - _SHELF_PADDING,  # BL - Y
+                    ),
+                ),
+                ("c3B", 4 * _OBSTACLE_COLOR),
+            )
+        batch.draw()
+     
     def _draw_shelfs(self, env):
         batch = pyglet.graphics.Batch()
 
