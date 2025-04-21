@@ -6,25 +6,10 @@ import time
 from rware.warehouse import Warehouse, RewardType, Action, Direction
 import matplotlib.pyplot as plt
 
-
-# class Agent(Entity):
-#     counter = 0
-
-#     def __init__(self, x: int, y: int, dir_: Direction, msg_bits: int):
-#         Agent.counter += 1
-#         super().__init__(Agent.counter, x, y)
-#         self.dir = dir_
-#         self.message = np.zeros(msg_bits)
-#         self.req_action: Optional[Action] = None
-#         self.carrying_shelf: Optional[Shelf] = None
-#         self.canceled_action = None
-#         self.has_delivered = False
-        
-        
+# basically the implementation is based on the A* algorithm 
+# but the heuristic function is adjusted to Dijkstra algorithm
 
 
-# now the path found by the aStar function is correct ,
-# but the action sequence is not correct, need to fix , get action from position 
 class Node:
     def __init__(self, position: Tuple[int, int], g_cost: float, h_cost: float, parent=None):
         self.position = position
@@ -56,9 +41,9 @@ def get_neighbors(pos, grid_size, obstacles):
     
     return neighbors
 
-def a_star(start, goal, grid_size, obstacles):
+def dijkstra(start, goal, grid_size, obstacles):
     """
-    Implement A* pathfinding algorithm
+    Implement Dijkstra shortest path finding algorithm
     Parameters:
     - start: Starting position (x, y)
     - goal: Goal position (x, y)
@@ -92,9 +77,12 @@ def a_star(start, goal, grid_size, obstacles):
                 continue
 
             g_cost = current.g_cost + 1
-            h_cost = manhattan_distance(neighbor_pos, goal)
-
+            
+            # the Node implementation is based on A* but we dont need h_cost for Dijkstra, so we set it to 0
+            h_cost = 0 
+            
             if neighbor_pos not in nodes:
+            
                 neighbor = Node(neighbor_pos, g_cost, h_cost, current)
                 nodes[neighbor_pos] = neighbor
                 heappush(open_list, neighbor)
@@ -292,7 +280,7 @@ def find_nearest_shelf_with_object(env, current_pos):
     nearest_shelf = min(requested_shelves, key=lambda s: manhattan_distance(current_pos, (s.x, s.y)))
     return nearest_shelf
 
-def run_warehouse_with_astar():
+def run_warehouse_with_dijkstra():
     
     agent_state = 1 
     # Create environment
@@ -386,7 +374,7 @@ def run_warehouse_with_astar():
             print(f"[STATE 4] Returning shelf to original location at {target_pos}")
 
         # Find path to target pos 
-        path = a_star(current_pos, target_pos, env.grid_size, obstacles)
+        path = dijkstra(current_pos, target_pos, env.grid_size, obstacles)
         
         if not path:
             print("No valid path found!")
@@ -456,6 +444,6 @@ def run_warehouse_with_astar():
 
 if __name__ == "__main__":
     try:
-        run_warehouse_with_astar()
+        run_warehouse_with_dijkstra()
     except KeyboardInterrupt:
         print("\nSimulation stopped by user")
