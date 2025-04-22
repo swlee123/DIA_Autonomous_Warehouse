@@ -9,6 +9,9 @@ import math
 
 
 # handle collision for mutiple agent
+# problem :  
+#  1.multiple agent will deadlock each other and wait for other to move 
+#  2. sometimes agent will move to shelf location that is already taken by other agent , and then stuck at there
 
 
 class Node:
@@ -129,6 +132,7 @@ def get_next_action(current_pos, next_pos, agent):
 
 
 
+    print(f"dx: {dx}, dy: {dy}")
     if dx == 1:
         desired_direction = Direction.RIGHT.value
     elif dx == -1:
@@ -138,8 +142,11 @@ def get_next_action(current_pos, next_pos, agent):
     elif dy == -1:
         desired_direction = Direction.UP.value
     else:
-        raise ValueError("Invalid move: next_pos must differ from current_pos by 1 unit.")
-
+        # this is where we detect moves that is not valid / collision occured before 
+        print("Invalid move: next_pos must differ from current_pos by 1 unit.")        
+        
+        return Action.NOOP.value
+    
     if desired_direction == current_direction:
         return Action.FORWARD.value
     
@@ -213,24 +220,23 @@ def find_nearest_shelf_with_object(env, current_pos):
     # Filter shelves that are in the request queue (target shelves to bring to goal point)
     requested_shelves = [shelf for shelf in shelves if shelf in request_queue]
     
+
     if not requested_shelves:
         return None
         
     # Find the nearest requested shelf using Manhattan distance
     nearest_shelf = None 
-    not_available_sheves = []
+  
+
+    available_shelf = [shelf for shelf in requested_shelves if shelf.taken == False]
     
-    # filter out the shelves that is hold by other agents
-    for agent in env.agents:
-        if agent.carrying_shelf is not None:
-            not_available_sheves.append(agent.carrying_shelf)
-    
-    available_shelf = [shelf for shelf in requested_shelves if shelf not in not_available_sheves]
-                
-        
-    nearest_shelf = min(available_shelf, key=lambda s: manhattan_distance(current_pos, (s.x, s.y)))
+    if available_shelf:    
+        nearest_shelf = min(available_shelf, key=lambda s: manhattan_distance(current_pos, (s.x, s.y)))
     
 
+    if nearest_shelf:
+        nearest_shelf.taken = True
+    
     
     return nearest_shelf
 
@@ -239,7 +245,7 @@ def run_warehouse_with_astar(agent_count=1):
 
     # Create environment
     # shelf_columns,column_height,shelf_rows,n_agents,msg_bits,sensor_range,request_queue_size
-    env = Warehouse(1, 4, 3, agent_count, 0, 1, 5, None, None, RewardType.GLOBAL)
+    env = Warehouse(1, 2, 3, agent_count, 0, 1, 5, None, None, RewardType.GLOBAL)
     obs, info = env.reset()
     
     # Get goal positions from environment
@@ -250,6 +256,9 @@ def run_warehouse_with_astar(agent_count=1):
     # saved point for shelf 
     saved_shelf_pos = [None for _ in range(env.n_agents)]  # Initialize saved shelf positions for each agent
     target_pos = [None for _ in range(env.n_agents)]  # Initialize target positions for each agent
+    target_shelf = [None for _ in range(env.n_agents)]  # Initialize target shelves for each agent
+    
+    
     # Action Enum 
     action_names = {0: 'NOOP',1: 'FORWARD', 2: 'LEFT',3: 'RIGHT',4: 'TOGGLE_LOAD'}
         
@@ -270,11 +279,17 @@ def run_warehouse_with_astar(agent_count=1):
     
     while True:
         
+        # global var to store occupied position by other agent ,
+        # to avoid collision
+        occupied_positions = set()
+        
         actions = [Action.NOOP.value] * env.n_agents
         
         for i,agent in enumerate(env.agents):
 
             current_pos = (agent.x, agent.y)
+
+
 
             print(f"Agent {i} Current Position: {current_pos}, State: {agent_state[i]}")
             obstacles = get_obstacles(env,i)
@@ -291,14 +306,52 @@ def run_warehouse_with_astar(agent_count=1):
                 
                 # Get action from current position to next position
                 actions[i] = get_next_action(current_pos, target_pos[i], agent)
+                
+                # collision detection and handling when agent move to empty position
+                if actions[i] is Action.NOOP.value or (agent_state[i] == 1  and current_pos in occupied_positions):
+                    
+                    agent_paths[i] = []
+                    
+                    print("Collision detected! Press Enter to continue...")
+                    continue                    
+                    
+                    
+                    
+                    
                 print(f"Current Pos : {current_pos} Next pos: {target_pos[i]}, Action: {action_names[actions[i]]}")
+                
                 
                 if actions[i] is Action.FORWARD.value:
                     
-                    print("Moving forward...")
-                    # If the agent is moving forward and reaches the next position, pop it from the path
-                    agent_paths[i].pop(0)
-                
+                    # collision handling and reroute
+                    if target_pos[i] in occupied_positions:
+                        
+                        print("Collision detected! Rerouting...")
+                        
+                        temp_obstacles = obstacles.copy()
+                        
+                        for a in occupied_positions:
+                            temp_obstacles.add(a)
+                        
+                        # If the next position is occupied, find a new path to the target position
+                        new_path = a_star(current_pos, target_pos[i], env.grid_size, temp_obstacles)[1:]
+                            
+                        if not new_path:
+                            print("No valid new path found!")
+                            break
+                            
+                            
+                        input(f"Rerouted path of length {len(new_path)}: {new_path}")
+                        
+                        agent_paths[i] = new_path
+                    else:
+                        # If the next position is not occupied, add it to occupied positions
+                        occupied_positions.add(target_pos[i])
+                        occupied_positions.add(current_pos)
+                        
+                        print("Moving forward...")
+                        # If the agent is moving forward and reaches the next position, pop it from the path
+                        agent_paths[i].pop(0)
                 
 
             # If there is no path, either it is at goal or at shelf location  
@@ -311,6 +364,9 @@ def run_warehouse_with_astar(agent_count=1):
                     print("Reached shelf. Loading...")
                     actions[i] = Action.TOGGLE_LOAD.value
                     agent_state[i] = 2
+                
+        
+                    
                     
                 # agent reached goal with shelf , unload 
                 elif agent_state[i] == 2 and current_pos in goals and agent.carrying_shelf:
@@ -325,6 +381,9 @@ def run_warehouse_with_astar(agent_count=1):
                     print("Returned shelf. Unloading shelf at original place...")
                     actions[i] = Action.TOGGLE_LOAD.value
                     
+                    
+                    target_shelf[i].taken = False
+                    
                     target_pos[i] = None
                     saved_shelf_pos[i] = None
                     # reset target pos and saved shelf pos
@@ -337,18 +396,18 @@ def run_warehouse_with_astar(agent_count=1):
                         # Not carrying a shelf, need to move to nearest shelf with object
                         
                         # Find nearest shelf with object
-                        target_shelf = find_nearest_shelf_with_object(env, current_pos)
+                        target_shelf[i] = find_nearest_shelf_with_object(env, current_pos)
                         
                         # check whether other agent is 
-                        if target_shelf:
-                            target_pos[i] = (target_shelf.x, target_shelf.y)
+                        if target_shelf[i]:
+                            target_pos[i] = (target_shelf[i].x, target_shelf[i].y)
                             saved_shelf_pos[i] = target_pos[i]
                             print(f"[STATE 1] Moving to shelf at {target_pos[i]}")
                             
                     
                         else:
                             print("No shelves with objects found!")
-                            break
+                            continue
                     elif agent_state[i] == 2:
                         # Carrying a loaded shelf, moving to goal
 
@@ -356,7 +415,7 @@ def run_warehouse_with_astar(agent_count=1):
                         print(f"[STATE 2] Moving to goal at {target_pos[i]}")
 
                     elif agent_state[i] == 3:
-                        # At goal with loaded shelf, need upload
+                        # At goal with loaded shelf, need unload
                         
                         # handle unloading 
                         print(f"[STATE 3] At goal. Unloading shelf...")
@@ -373,7 +432,8 @@ def run_warehouse_with_astar(agent_count=1):
                     
                     if not path:
                         print("No valid path found!")
-                        break
+                        actions[i] = Action.NOOP.value
+                        continue
                         
                     print(f"Found path of length {len(path)}: {path}")
                     
@@ -382,19 +442,20 @@ def run_warehouse_with_astar(agent_count=1):
                     # Set agent direction to the initial direction
     
             
-        # no matter got path or not , execute single action 
-            
+        # 
         env.step(actions)
         env.render()
         print("Current Direction:", direction_names[agent.dir.value])
         time.sleep(0.2)
+        
+        
         
 
 
 
 if __name__ == "__main__":
     try:
-        run_warehouse_with_astar(3)
+        run_warehouse_with_astar(2)
         
         
     except KeyboardInterrupt:

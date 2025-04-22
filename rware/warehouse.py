@@ -132,6 +132,7 @@ class Shelf(Entity):
     def __init__(self, x, y):
         Shelf.counter += 1
         super().__init__(Shelf.counter, x, y)
+        self.taken = False
 
     @property
     def collision_layers(self):
@@ -251,7 +252,7 @@ class Warehouse(gym.Env):
         self.obstacles_loc = None if obstacles_loc is None else obstacles_loc
         
         if not layout:
-            self._make_layout_from_params(shelf_columns, shelf_rows, column_height)
+            self._make_layout_from_params(shelf_columns, shelf_rows, column_height,goal_number=n_agents)
         else:
             self._make_layout_from_str(layout)
 
@@ -307,7 +308,7 @@ class Warehouse(gym.Env):
         self.renderer = None
         self.render_mode = render_mode
 
-    def _make_layout_from_params(self, shelf_columns, shelf_rows, column_height):
+    def _make_layout_from_params(self, shelf_columns, shelf_rows, column_height,goal_number=2):
         assert shelf_columns % 2 == 1, "Only odd number of shelf columns is supported"
 
         self.grid_size = (
@@ -316,10 +317,16 @@ class Warehouse(gym.Env):
         )
         self.column_height = column_height
         self.grid = np.zeros((_COLLISION_LAYERS, *self.grid_size), dtype=np.int32)
-        self.goals = [
-            (self.grid_size[1] // 2 - 1, self.grid_size[0] - 1),
-            (self.grid_size[1] // 2, self.grid_size[0] - 1),
-        ]
+        # self.goals = [
+        #     (self.grid_size[1] // 2 - 1, self.grid_size[0] - 1),
+        #     (self.grid_size[1] // 2, self.grid_size[0] - 1),
+        # ]
+        
+        # Dynamically generate goal positions at the bottom row, centered horizontally
+        mid_x = self.grid_size[1] // 2
+        start_x = mid_x - (goal_number // 2)
+        self.goals = [(start_x + i, self.grid_size[0] - 1) for i in range(goal_number)]
+
 
         self.highways = np.zeros(self.grid_size, dtype=np.uint8)
 
