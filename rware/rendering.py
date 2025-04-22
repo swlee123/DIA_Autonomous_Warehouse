@@ -130,7 +130,9 @@ class Viewer(object):
         self._draw_goals(env)
         self._draw_shelfs(env)
         self._draw_agents(env)
-        self._draw_obstacles(env)
+        
+        if env.obstacles_loc:
+            self._draw_obstacles(env)
 
         if return_rgb_array:
             buffer = pyglet.image.get_buffer_manager().get_color_buffer()

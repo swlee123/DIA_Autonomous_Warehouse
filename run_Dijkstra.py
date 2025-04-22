@@ -446,16 +446,7 @@ def run_warehouse_with_dijkstra():
             time.sleep(1)
             agent_state = 1
 
-        # if done :
-        #     print("Environment done. Resetting...")
-        #     obs, info = env.reset()
-        #     current_pos = (agent.x, agent.y)
-        #     current_direction = agent.dir.value
-        #     agent_state = 1
-        #     saved_shelf_pos = None
-        #     break
-
-        
+ 
 
 
 if __name__ == "__main__":
