@@ -67,6 +67,7 @@ _GOAL_COLOR = (60, 60, 60)
 _SHELF_PADDING = 2
 
 _OBSTACLE_COLOR = _ORANGE
+_HUMAN_COLOR = _GREEN
 
 def get_display(spec):
     """Convert a display specification (such as :0) into an actual Display
@@ -130,6 +131,9 @@ class Viewer(object):
         self._draw_goals(env)
         self._draw_shelfs(env)
         self._draw_agents(env)
+        
+        if env.human_count > 0:
+            self._draw_humans(env)
         
         if env.obstacles_loc:
             self._draw_obstacles(env)
@@ -291,6 +295,84 @@ class Viewer(object):
             )
             label.draw()
 
+    def _draw_humans(self, env):
+        
+        
+        batch = pyglet.graphics.Batch()
+
+        radius = self.grid_size / 3
+
+        resolution = 6
+
+        for human in env.humans:
+            col, row = human.x, human.y
+            row = self.rows - row - 1  # pyglet rendering is reversed
+
+            # make a circle
+            verts = []
+            for i in range(resolution):
+                angle = 2 * math.pi * i / resolution
+                x = (
+                    radius * math.cos(angle)
+                    + (self.grid_size + 1) * col
+                    + self.grid_size // 2
+                    + 1
+                )
+                y = (
+                    radius * math.sin(angle)
+                    + (self.grid_size + 1) * row
+                    + self.grid_size // 2
+                    + 1
+                )
+                verts += [x, y]
+            circle = pyglet.graphics.vertex_list(resolution, ("v2f", verts))
+
+            draw_color =  _HUMAN_COLOR
+
+            glColor3ub(*draw_color)
+            circle.draw(GL_POLYGON)
+
+        for human in env.humans:
+            col, row = human.x, human.y
+            row = self.rows - row - 1  # pyglet rendering is reversed
+
+            batch.add(
+                2,
+                gl.GL_LINES,
+                None,
+                (
+                    "v2f",
+                    (
+                        (self.grid_size + 1) * col
+                        + self.grid_size // 2
+                        + 1,  # CENTER X
+                        (self.grid_size + 1) * row
+                        + self.grid_size // 2
+                        + 1,  # CENTER Y
+                        (self.grid_size + 1) * col
+                        + self.grid_size // 2
+                        + 1
+                        + (
+                            radius if human.dir.value == Direction.RIGHT.value else 0
+                        )  # DIR X
+                        + (
+                            -radius if human.dir.value == Direction.LEFT.value else 0
+                        ),  # DIR X
+                        (self.grid_size + 1) * row
+                        + self.grid_size // 2
+                        + 1
+                        + (
+                            radius if human.dir.value == Direction.UP.value else 0
+                        )  # DIR Y
+                        + (
+                            -radius if human.dir.value == Direction.DOWN.value else 0
+                        ),  # DIR Y
+                    ),
+                ),
+                ("c3B", (*_AGENT_DIR_COLOR, *_AGENT_DIR_COLOR)),
+            )
+        batch.draw()
+        
     def _draw_agents(self, env):
         agents = []
         batch = pyglet.graphics.Batch()

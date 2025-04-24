@@ -7,13 +7,17 @@ from gymnasium.utils import seeding
 import networkx as nx
 import numpy as np
 
+import random
+from enum import Enum, auto
 
-_COLLISION_LAYERS = 3
+
+
+_COLLISION_LAYERS = 4
 
 _LAYER_AGENTS = 0
 _LAYER_SHELFS = 1
 _LAYER_OBSTACLES =2 
-
+_LAYER_HUMANS = 3
 
 class _VectorWriter:
     def __init__(self, size: int):
@@ -79,13 +83,64 @@ class Entity:
         self.x = x
         self.y = y
 
+# added human to let them walk randomly in the environment , this introduce randomness to the environment
+class Human(Entity):
+    
+    counter =0 
+    def __init__(self, x: int, y: int, dir_: Direction, msg_bits: int):
+            
+        Human.counter += 1
+        super().__init__(Human.counter, x, y)
 
+        self.dir = dir_
+        self.message = np.zeros(msg_bits)
+        self.req_action: Optional[Action] = None
+
+    @property
+    def collision_layers(self):
+        return (_LAYER_HUMANS,_LAYER_AGENTS, _LAYER_OBSTACLES)
+    
+    def req_location(self, grid_size) -> Tuple[int, int]:
+        if self.req_action != Action.FORWARD:
+            return self.x, self.y
+        elif self.dir == Direction.UP:
+            return self.x, max(0, self.y - 1)
+        elif self.dir == Direction.DOWN:
+            return self.x, min(grid_size[0] - 1, self.y + 1)
+        elif self.dir == Direction.LEFT:
+            return max(0, self.x - 1), self.y
+        elif self.dir == Direction.RIGHT:
+            return min(grid_size[1] - 1, self.x + 1), self.y
+
+        raise ValueError(
+            f"Direction is {self.dir}. Should be one of {[v for v in Direction]}"
+        )
+
+    def req_direction(self) -> Direction:
+        wraplist = [Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT]
+        if self.req_action == Action.RIGHT:
+            return wraplist[(wraplist.index(self.dir) + 1) % len(wraplist)]
+        elif self.req_action == Action.LEFT:
+            return wraplist[(wraplist.index(self.dir) - 1) % len(wraplist)]
+        else:
+            return self.dir    
+    
+    
+class HumanAction(Enum):
+    NOOP    = 0
+    FORWARD = 1
+    LEFT    = 2
+    RIGHT   = 3
+    
+    
+    
 class Agent(Entity):
     counter = 0
 
     def __init__(self, x: int, y: int, dir_: Direction, msg_bits: int):
         Agent.counter += 1
         super().__init__(Agent.counter, x, y)
+
         self.dir = dir_
         self.message = np.zeros(msg_bits)
         self.req_action: Optional[Action] = None
@@ -96,9 +151,9 @@ class Agent(Entity):
     @property
     def collision_layers(self):
         if self.loaded:
-            return (_LAYER_AGENTS, _LAYER_SHELFS)
+            return (_LAYER_HUMANS,_LAYER_AGENTS, _LAYER_SHELFS)
         else:
-            return (_LAYER_AGENTS,)
+            return (_LAYER_HUMANS,_LAYER_AGENTS,)
 
     def req_location(self, grid_size) -> Tuple[int, int]:
         if self.req_action != Action.FORWARD:
@@ -170,7 +225,7 @@ class Warehouse(gym.Env):
         reward_type: RewardType,
         layout: Optional[str] = None,
         obstacles_loc  = None,
-    
+        human_count: Optional[int] = 0,
         
         observation_type: ObservationType = ObservationType.FLATTENED,
         image_observation_layers: List[ImageLayer] = [
@@ -263,6 +318,8 @@ class Warehouse(gym.Env):
         self.reward_type = reward_type
         self.reward_range = (0, 1)
         
+        self.human_count = human_count
+        
         self._cur_inactive_steps = None
         self._cur_steps = 0
         self.max_steps = max_steps
@@ -280,7 +337,9 @@ class Warehouse(gym.Env):
         self.request_queue = []
 
         self.agents: List[Agent] = []
-
+        self.humans : List[Human] = []
+        
+        
         # default values:
         self.fast_obs = None
         self.image_obs = None
@@ -787,6 +846,10 @@ class Warehouse(gym.Env):
 
     def _recalc_grid(self):
         self.grid[:] = 0
+        
+        for h in self.humans:
+            self.grid[_LAYER_HUMANS, h.y, h.x] = h.id
+            
         for s in self.shelfs:
             self.grid[_LAYER_SHELFS, s.y, s.x] = s.id
 
@@ -796,7 +859,110 @@ class Warehouse(gym.Env):
         if self.obstacles_loc is not None:
             for o in self.obstacles_loc:
                 self.grid[_LAYER_OBSTACLES, o[1], o[0]] = 1
+    def _move_humans_randomly(self):
+        """
+        One synchronous random‑movement step for all humans.
 
+        • Each human samples {NOOP, FORWARD, LEFT, RIGHT} uniformly.  
+        • Humans never walk into shelves, walls, obstacles, agents, or other humans.  
+        • A tiny directed‑graph resolve (same pattern you use for agents) prevents
+        head‑on swaps and multi‑way collisions.
+        """
+
+        if not self.humans:
+            return  # quick exit
+
+        # ----- sample intended actions ------------------------------------------------
+        for h in self.humans:
+            h.req_action = random.choice([
+                Action.NOOP,
+                Action.FORWARD,
+                Action.LEFT,
+                Action.RIGHT,
+            ])
+
+        # ----- rotate immediately (cheap, no collision risk) --------------------------
+        for h in self.humans:
+            if h.req_action == Action.LEFT:
+                h.dir = Direction((h.dir.value - 1) % 4)
+            elif h.req_action == Action.RIGHT:
+                h.dir = Direction((h.dir.value + 1) % 4)
+
+        # ----- build movement graph for FORWARD steps ---------------------------------
+        G = nx.DiGraph()
+        
+        for h in self.humans:
+            start  = (h.x, h.y)
+            if h.req_action ==Action.FORWARD:
+                
+                target = h.req_location(self.grid_size)
+                # block if outside arena or immediate obstacle
+                blocked = (
+                    
+                    start != target
+                    and (
+                    self.grid[_LAYER_OBSTACLES, target[1], target[0]] or
+                    self.grid[_LAYER_HUMANS, target[1], target[0]] or
+                    self.grid[_LAYER_AGENTS, target[1], target[0]] 
+                    )
+              
+                )
+                if blocked:
+                    # input("Blocked by an obstacle or another human! Press Enter to continue...")
+                    h.req_action = Action.NOOP
+                    G.add_edge(start, start)
+                else:
+           
+                    G.add_edge(start, target)
+            else:
+                
+                G.add_edge(start, start)  # NOOP humans
+
+        committed_human = set()
+        
+        wcomps = [G.subgraph(c).copy() for c in nx.weakly_connected_components(G)]
+
+        for comp in wcomps:
+            try:
+                # if we find a cycle in this component we have to
+                # commit all nodes in that cycle, and nothing else
+                cycle = nx.algorithms.find_cycle(comp)
+                if len(cycle) == 2:
+                    # we have a situation like this: [A] <-> [B]
+                    # which is physically impossible. so skip
+                    continue
+                for edge in cycle:
+                    start_node = edge[0]
+                    human_id = self.grid[_LAYER_HUMANS, start_node[1], start_node[0]]
+                    if human_id > 0:
+                        committed_human.add(human_id)
+            except nx.NetworkXNoCycle:
+                longest_path = nx.algorithms.dag_longest_path(comp)
+                for x, y in longest_path:
+                    human_id = self.grid[_LAYER_HUMANS, y, x]
+                    if human_id:
+                        committed_human.add(human_id)
+
+        committed_human = set([self.humans[id_ - 1] for id_ in committed_human])
+        failed_human = set(self.humans) - committed_human
+
+        for agent in failed_human:
+            assert agent.req_action == Action.FORWARD
+            agent.req_action = Action.NOOP
+
+        for human in self.humans:
+            human.prev_x, human.prev_y = human.x, human.y
+
+            if human.req_action == Action.FORWARD:
+                human.x, human.y = human.req_location(self.grid_size)
+                
+            elif human.req_action in [Action.LEFT, Action.RIGHT]:
+                human.dir = human.req_direction()
+ 
+        # ----- refresh grid layer -----------------------------------------------------
+        self._recalc_grid()      # make sure you now write HUMANS into _LAYER_HUMANS
+    
+    
     def reset(self, seed=None, options=None):
         if seed is not None:
             # setting seed
@@ -826,12 +992,29 @@ class Warehouse(gym.Env):
             size=self.n_agents,
             replace=False,
         )
+        
+        # spawn human at random location 
+        human_locs = self.np_random.choice(
+            np.arange(self.grid_size[0] * self.grid_size[1]),
+            size=self.human_count,
+            replace=False,
+        )
+        
         agent_locs = np.unravel_index(agent_locs, self.grid_size)
-        # and direction
+        
+        # agent and direction
         agent_dirs = self.np_random.choice([d for d in Direction], size=self.n_agents)
         self.agents = [
             Agent(x, y, dir_, self.msg_bits)
             for y, x, dir_ in zip(*agent_locs, agent_dirs)
+        ]
+        
+        # and human directions 
+        human_dirs = self.np_random.choice([d for d in Direction], size=self.human_count)
+        
+        self.humans = [
+            Human(x, y, dir_, self.msg_bits)
+            for y, x, dir_ in zip(*np.unravel_index(human_locs, self.grid_size), human_dirs)
         ]
 
         self._recalc_grid()
@@ -849,6 +1032,10 @@ class Warehouse(gym.Env):
     ) -> Tuple[List[np.ndarray], List[float], bool, bool, Dict]:
         assert len(actions) == len(self.agents)
 
+        # always move human randomly first , though i cant justify why
+        self._move_humans_randomly()
+        
+        
         for agent, action in zip(self.agents, actions):
             if self.msg_bits > 0:
                 agent.req_action = Action(action[0])
@@ -865,6 +1052,7 @@ class Warehouse(gym.Env):
 
         G = nx.DiGraph()
 
+        # logic for agent dont bump to human need to add , and also human randonm moverment logic 
         for agent in self.agents:
             start = agent.x, agent.y
             target = agent.req_location(self.grid_size)
@@ -887,10 +1075,14 @@ class Warehouse(gym.Env):
                 G.add_edge(start, start)
             elif (
                 start != target
-                and self.grid[_LAYER_OBSTACLES, target[1], target[0]]
+                and (
+                    self.grid[_LAYER_OBSTACLES, target[1], target[0]] or
+                    self.grid[_LAYER_HUMANS, target[1], target[0]]
+                )
+                
 
             ):
-                # no matter what, agent cant pass through obstacles
+                # no matter what, agent cant pass through obstacles and humans
                 
                 agent.req_action = Action.NOOP
                 G.add_edge(start, start)

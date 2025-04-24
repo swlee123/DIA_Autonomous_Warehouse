@@ -10,10 +10,7 @@ import math
 
 # handle collision for mutiple agent
 # problem :  
-#  1.multiple agent will deadlock each other and wait for other to move 
-#  2. sometimes agent will move to shelf location that is already taken by other agent , and then stuck at there
-
-
+# implement a mechanism that check if a agent stay at same place for mutiple tick (5), and was not holding anything, and at goal position 
 class Node:
     def __init__(self, position: Tuple[int, int], g_cost: float, h_cost: float, parent=None):
         self.position = position
@@ -96,6 +93,64 @@ def a_star(start, goal, grid_size, obstacles):
 
     return []  # No path found
 
+
+def dijkstra(start, goal, grid_size, obstacles):
+    """
+    Implement Dijkstra shortest path finding algorithm
+    Parameters:
+    - start: Starting position (x, y)
+    - goal: Goal position (x, y)
+    - grid_size: Size of the grid (height, width)
+    - obstacles: Set of obstacle positions (x, y)
+    - carrying_shelf: True/False
+    
+    Returns:
+    - List of positions [(x1, y1), (x2, y2), ...] representing the path from start to goal
+    """
+    
+    # the manhattan distance is not used here in Dijkstra 
+    start_node = Node(start, 0, manhattan_distance(start, goal))
+    open_list = [start_node]
+    closed_set = set()
+    nodes = {start: start_node}
+
+    while open_list:
+        current = heappop(open_list)
+        
+        if current.position == goal:
+            # Reconstruct path
+            path = []
+            while current:
+                path.append(current.position)
+                current = current.parent
+            return path[::-1]
+
+        closed_set.add(current.position)
+
+        for neighbor_pos in get_neighbors(current.position, grid_size, obstacles):
+            if neighbor_pos in closed_set:
+                continue
+
+            g_cost = current.g_cost + 1
+            
+            # the Node implementation is based on A* but we dont need h_cost for Dijkstra, so we set it to 0
+            h_cost = 0 
+            
+            if neighbor_pos not in nodes:
+            
+                neighbor = Node(neighbor_pos, g_cost, h_cost, current)
+                nodes[neighbor_pos] = neighbor
+                heappush(open_list, neighbor)
+            else:
+                neighbor = nodes[neighbor_pos]
+                if g_cost < neighbor.g_cost:
+                    neighbor.g_cost = g_cost
+                    neighbor.f_cost = g_cost + h_cost
+                    neighbor.parent = current
+
+    return []  # No path found
+
+
 def get_obstacles(env,i):
     """
     Get positions of shelves and other obstacles
@@ -114,6 +169,15 @@ def get_obstacles(env,i):
     shelf_array = env.shelfs
 
     
+    # also add obstacles(obj name), check if obs exist cuz sometimes it is not 
+    if env.obstacles_loc is not None:
+        for loc in env.obstacles_loc:
+            obstacles.add((loc[0], loc[1]))
+            
+    if env.humans is not None:
+        for human in env.humans:
+            obstacles.add((human.x, human.y))
+            
     for shelf in shelf_array:
         obstacles.add((shelf.x, shelf.y))
     
@@ -220,6 +284,10 @@ def find_nearest_shelf_with_object(env, current_pos):
     # Filter shelves that are in the request queue (target shelves to bring to goal point)
     requested_shelves = [shelf for shelf in shelves if shelf in request_queue]
     
+    for shelf in requested_shelves:
+        print(f"Shelf Position: ({shelf.x}, {shelf.y}), Taken: {shelf.taken}, In Request Queue: {shelf in request_queue}")
+
+    
 
     if not requested_shelves:
         return None
@@ -240,23 +308,44 @@ def find_nearest_shelf_with_object(env, current_pos):
     
     return nearest_shelf
 
-def run_warehouse_with_astar(agent_count=1):
+
+
+def random_action():
+    
+    # introduce some randomness in the action taken by the agent when no path is found
+    
+    print("Random action called !")
+    return np.random.choice([Action.NOOP.value, Action.LEFT.value, Action.RIGHT.value])
+
+
+def run_warehouse_with(algorithm,agent_count=1):
     
 
     # Create environment
     # shelf_columns,column_height,shelf_rows,n_agents,msg_bits,sensor_range,request_queue_size
-    env = Warehouse(1, 2, 3, agent_count, 0, 1, 5, None, None, RewardType.GLOBAL)
+    env = Warehouse(3, 3, 2, agent_count, 0, 1, 5, None, None, RewardType.GLOBAL,human_count=1 ,obstacles_loc=[(4,5)])
     obs, info = env.reset()
+    
+    algo_function = None
+    
+    if algorithm == 'A*':
+        algo_function = a_star
+    elif algorithm == 'Dijkstra':
+        algo_function = dijkstra
+    else:
+        raise ValueError("Invalid algorithm. Choose 'A*' or 'Dijkstra'.")
     
     # Get goal positions from environment
     goals = env.goals 
     
     agent_paths = [[] for _ in range(env.n_agents)]  # Initialize paths for each agent
     agent_state = [1 for _ in range(env.n_agents)]  # Initialize all agents to state 1
-    # saved point for shelf 
+
     saved_shelf_pos = [None for _ in range(env.n_agents)]  # Initialize saved shelf positions for each agent
     target_pos = [None for _ in range(env.n_agents)]  # Initialize target positions for each agent
     target_shelf = [None for _ in range(env.n_agents)]  # Initialize target shelves for each agent
+    
+    
     
     
     # Action Enum 
@@ -334,11 +423,12 @@ def run_warehouse_with_astar(agent_count=1):
                             temp_obstacles.add(a)
                         
                         # If the next position is occupied, find a new path to the target position
-                        new_path = a_star(current_pos, target_pos[i], env.grid_size, temp_obstacles)[1:]
+                        new_path = algo_function(current_pos, target_pos[i], env.grid_size, temp_obstacles)[1:]
                             
                         if not new_path:
                             print("No valid new path found!")
-                            break
+                            actions[i] = random_action()
+                            continue
                             
                             
                         input(f"Rerouted path of length {len(new_path)}: {new_path}")
@@ -407,7 +497,9 @@ def run_warehouse_with_astar(agent_count=1):
                     
                         else:
                             print("No shelves with objects found!")
+                            actions[i] = Action.NOOP.value
                             continue
+                            
                     elif agent_state[i] == 2:
                         # Carrying a loaded shelf, moving to goal
 
@@ -455,7 +547,10 @@ def run_warehouse_with_astar(agent_count=1):
 
 if __name__ == "__main__":
     try:
-        run_warehouse_with_astar(2)
+        
+        # Run the warehouse simulation with A* algorithm and 3 agents
+        run_warehouse_with("A*",3)
+        
         
         
     except KeyboardInterrupt:
