@@ -1,3 +1,0 @@
-algorithm,env_name,execution_time,reward,reward_per_tick,ticks
-A*,Normal,32.46159052848816,26.0,0.08666666666666667,300
-Dijkstra,Normal,31.869678258895874,18.0,0.06,300

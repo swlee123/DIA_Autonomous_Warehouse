@@ -1,3 +1,0 @@
-algorithm,env_name,execution_time,reward,reward_per_tick,ticks
-A*,Obstacle,31.431368827819824,26.0,0.08666666666666667,300
-Dijkstra,Obstacle,31.559871912002563,22.0,0.07333333333333333,300

@@ -7,12 +7,14 @@ import pandas as pd
 from a2c import A2C
 from wrappers import RecordEpisodeStatistics, TimeLimit
 import os
+import time 
 
 path = "D:\\robotic-warehouse\\seac\pretrained\\rware-small-4ag"
 env_name = "rware:rware-small-2ag-v2"
 time_limit = 500 # 25 for LBF
 EPISODES = 1
 TICKS = 300
+INTERVAL = 0.05
 
 # define all shit at here
 env = gym.make(env_name)
@@ -54,6 +56,7 @@ for ep in range(EPISODES):
         actions = [a.item() for a in actions]
         env.render()
         obs, _, done, info = env.step(actions)
+        time.sleep(INTERVAL)
         ticks -= 1
         
         

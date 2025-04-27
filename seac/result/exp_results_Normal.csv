@@ -1,2 +1,2 @@
-algorithm,env_name,num_agents,reward,reward_per_ticks,ticks
-SEAC,Normal,2,2.0,0.006666666666666667,300
+algorithm,env_name,num_agents,reward,reward_per_ticks,ticks,collision_per_ticks,collision
+SEAC,Normal,2,8.0,0.02666666666666667,300,0.0066,2

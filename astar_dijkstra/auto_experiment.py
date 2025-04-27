@@ -1,136 +1,89 @@
 import time
-from experiment.run_aStar import run_warehouse_with
 import pandas as pd
-from utils import record_window_to_video
 import threading
+import yaml
+import os
 
-# Define the recording function to be run in a separate thread
+from astar_dijkstra import run_warehouse_with
+from utils import record_window_to_video
+
+def load_config(config_path="config.yaml"):
+    with open(config_path, "r") as f:
+        return yaml.safe_load(f)
+
 def record_experiment(window_title, video_name, duration, frame_rate=30):
     print("Recording the experiment window...")
     ins = record_window_to_video(window_title=window_title, video_name=video_name, duration=duration, frame_rate=frame_rate)
     return ins
 
+def main():
+    config = load_config()
 
-# evaluate 🔛 
-# env_name = "rware:rware-small-4ag-v2" for 3 env ,
-# diff is for 2 : with obstacle, 3: with human 4 : both
+    TICKS = config["TICKS"]
+    INTERVAL = config["INTERVAL"]
+    ALGORITHMS = config["ALGORITHMS"]
+    ENVIRONMENTS = config["ENVIRONMENTS"]
 
-# Define the three environments settings
-ENV = {
-    # "Obstacle & Human": [3,8,2,2,1,[(4,10),(5,10),(4,12),(5,12)]],
-    # "Normal": [3,8,2,2],
-    "Obstacle": [3,8,2,2,[(4,10),(5,10),(4,12),(5,12)]],
-    # "Human": [3,8,2,2,1],
-}
+    info = []
 
-ALGORITHMS = ["A*", "Dijkstra"]
-TICKS = 300
-INTERVAL = 0.05
+    for algo in ALGORITHMS:
+        for env_name, env_params in ENVIRONMENTS.items():
 
-info = []
+            video_name = f"warehouse_{algo}_{env_name}.mp4" if algo != "A*" else f"warehouse_Astar_{env_name}.mp4"
 
-# Loop through each environment and compare A* and Dijkstra
-for algo in ALGORITHMS:
-    for env_name in ENV.keys():
-        
+            print(f"\n--- Testing {algo} in Environment: {env_name} ---")
 
-            
-        video_name = f"{env_name}_{algo}.mp4"
-        
-        print(f"\n--- Testing {algo} in Environment: {env_name} ---")
-        
-        start_time = time.time()
-        
-        # You can start recording once the environment has started and the window is visible
-        if algo == "A*":
-            video_name = f"warehouse_Astar_{env_name}.mp4"
-        else:
-            video_name = f"warehouse_{algo}_{env_name}.mp4"
-        recorded = False
-        
-        # Start recording in a separate thread only if not already started
-        if not recorded:
-            recording_thread = threading.Thread(target=record_experiment, args=("auto_experiment.py", video_name, TICKS*INTERVAL+30))
+            start_time = time.time()
+
+            # Start recording
+            recording_thread = threading.Thread(
+                target=record_experiment, 
+                args=("auto_experiment.py", video_name, TICKS * INTERVAL + 30)
+            )
             recording_thread.start()
-            recorded = True  # Set flag so recording only starts once
-        
-        # Run the environment and experiment based on env_name
-        if env_name == "Obstacle & Human":
-            shelf_column, column_height, shelf_rows, agent_count, human_count, obs_loc = ENV["Obstacle & Human"]
-            reward, rpt = run_warehouse_with(
-                algo, 
-                TICKS,
-                INTERVAL,
-                shelf_column=shelf_column,
-                column_height=column_height,
-                shelf_rows=shelf_rows,
-                agent_count=agent_count,
-                human_count=human_count,
-                obstacles_loc=obs_loc
-            )
-        elif env_name == "Normal":
-            shelf_column, column_height, shelf_rows, agent_count = ENV["Normal"]
-            reward, rpt = run_warehouse_with(
-                algo, 
-                TICKS,
-                INTERVAL,
-                shelf_column=shelf_column,
-                column_height=column_height,
-                shelf_rows=shelf_rows,
-                agent_count=agent_count
-            )
-        elif env_name == "Obstacle": 
-            shelf_column, column_height, shelf_rows, agent_count, obs_loc = ENV["Obstacle"]
-            reward, rpt = run_warehouse_with(
-                algo, 
-                TICKS,
-                INTERVAL,
-                shelf_column=shelf_column,
-                column_height=column_height,
-                shelf_rows=shelf_rows,
-                agent_count=agent_count,
-                obstacles_loc=obs_loc
-            )
-        elif env_name == "Human":
-            shelf_column, column_height, shelf_rows, agent_count, human_count = ENV["Human"]
-            reward, rpt = run_warehouse_with(
-                algo, 
-                TICKS,
-                INTERVAL,
-                shelf_column=shelf_column,
-                column_height=column_height,
-                shelf_rows=shelf_rows,
-                agent_count=agent_count,
-                human_count=human_count
-            )
-            
-        else:
-            print(f"Unknown environment: {env_name}")
-            continue
-        
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print(f"Execution Time for {algo} in {env_name} env: {execution_time:.4f} seconds")
-        print(f"Reward: {reward}")
-        print(f"Reward Per Tick: {rpt}")
-        
-        env_results = {
-            "algorithm": algo,
-            "env_name": env_name,
-            "execution_time": execution_time,
-            "reward": reward,
-            "reward_per_tick": rpt,
-            "ticks": TICKS
-        }
-        
-        info.append(env_results)
-        
-        # Wait for the recording thread to finish before moving to the next loop
-        recording_thread.join()
-        print("Recording finished.")
 
-# Save the results to a file
-env_name = "Obstacle"
+            # Run the experiment
+            reward, rpt, collision, cpt = run_warehouse_with(
+                algo,
+                TICKS,
+                INTERVAL,
+                **env_params
+            )
 
-df = pd.DataFrame(info)
-df.to_csv(f"result/exp_results_{env_name}.csv", index=False)
+            end_time = time.time()
+            execution_time = end_time - start_time
+
+            print(f"Execution Time for {algo} in {env_name} env: {execution_time:.4f} seconds")
+            print(f"Reward: {reward}")
+            print(f"Reward Per Tick: {rpt}")
+
+            env_results = {
+                "algorithm": algo,
+                "env_name": env_name,
+                "execution_time": execution_time,
+                "reward": reward,
+                "reward_per_tick": rpt,
+                "collisions": collision,
+                "collisions_per_tick": cpt,
+                "ticks": TICKS
+            }
+
+            info.append(env_results)
+
+            # Wait for recording to finish
+            recording_thread.join()
+            print("Recording finished.")
+
+    # Save all results
+    if not os.path.exists("result"):
+        os.makedirs("result")
+
+    print("Results:", info)
+    
+    df = pd.DataFrame(info)
+    name  = "result/exp_results_"+ config["ALGORITHMS"][0] + ".csv"
+    df.to_csv(name, index=False)
+    print(f"All results saved to {name}")
+
+if __name__ == "__main__":
+    main()
