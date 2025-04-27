@@ -39,6 +39,7 @@ class Action(Enum):
     LEFT = 2
     RIGHT = 3
     TOGGLE_LOAD = 4
+    RECAL = 5
 
 
 class Direction(Enum):
@@ -147,6 +148,8 @@ class Agent(Entity):
         self.carrying_shelf: Optional[Shelf] = None
         self.canceled_action = None
         self.has_delivered = False
+    
+        self.random_wait = 0
 
     @property
     def collision_layers(self):
@@ -376,15 +379,15 @@ class Warehouse(gym.Env):
         )
         self.column_height = column_height
         self.grid = np.zeros((_COLLISION_LAYERS, *self.grid_size), dtype=np.int32)
-        # self.goals = [
-        #     (self.grid_size[1] // 2 - 1, self.grid_size[0] - 1),
-        #     (self.grid_size[1] // 2, self.grid_size[0] - 1),
-        # ]
+        self.goals = [
+            (self.grid_size[1] // 2 - 1, self.grid_size[0] - 1),
+            (self.grid_size[1] // 2, self.grid_size[0] - 1),
+        ]
         
         # Dynamically generate goal positions at the bottom row, centered horizontally
-        mid_x = self.grid_size[1] // 2
-        start_x = mid_x - (goal_number // 2)
-        self.goals = [(start_x + i, self.grid_size[0] - 1) for i in range(goal_number)]
+        # mid_x = self.grid_size[1] // 2
+        # start_x = mid_x - (goal_number // 2)
+        # self.goals = [(start_x + i, self.grid_size[0] - 1) for i in range(goal_number)]
 
 
         self.highways = np.zeros(self.grid_size, dtype=np.uint8)
@@ -943,6 +946,7 @@ class Warehouse(gym.Env):
                     if human_id:
                         committed_human.add(human_id)
 
+
         committed_human = set([self.humans[id_ - 1] for id_ in committed_human])
         failed_human = set(self.humans) - committed_human
 
@@ -970,6 +974,7 @@ class Warehouse(gym.Env):
 
         Shelf.counter = 0
         Agent.counter = 0
+        Human.counter = 0
         self._cur_inactive_steps = 0
         self._cur_steps = 0
 
@@ -1159,6 +1164,7 @@ class Warehouse(gym.Env):
             # remove from queue and replace it
             candidates = [s for s in self.shelfs if s not in self.request_queue]
             new_request = self.np_random.choice(candidates)
+
             self.request_queue[self.request_queue.index(shelf)] = new_request
             # also reward the agents
             if self.reward_type == RewardType.GLOBAL:
