@@ -1,3 +1,0 @@
-algorithm,env_name,execution_time,reward,reward_per_tick,ticks
-A*,Human,32.639256715774536,22.0,0.07333333333333333,300
-Dijkstra,Human,31.37383770942688,22.0,0.07333333333333333,300

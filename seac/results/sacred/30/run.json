@@ -1,0 +1,152 @@
+{
+  "artifacts": [],
+  "command": "main",
+  "experiment": {
+    "base_dir": "D:\\seac\\seac",
+    "dependencies": [
+      "gym==0.22.0",
+      "numpy==1.23.4",
+      "sacred==0.8.2",
+      "torch==2.0.0"
+    ],
+    "mainfile": "train.py",
+    "name": "train",
+    "repositories": [
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      }
+    ],
+    "sources": [
+      [
+        "a2c.py",
+        "_sources\\a2c_cd50262a5a4a610f253fcef9bb2801fb.py"
+      ],
+      [
+        "envs.py",
+        "_sources\\envs_11cd75592d0ec90a14510c41e110e232.py"
+      ],
+      [
+        "model.py",
+        "_sources\\model_23e4e7ede22f91a39b58331749bcc446.py"
+      ],
+      [
+        "storage.py",
+        "_sources\\storage_19741b4736f9c1003c6d7a41db5307f5.py"
+      ],
+      [
+        "train.py",
+        "_sources\\train_c763435ec2102bc1029deb10323dad36.py"
+      ],
+      [
+        "utils.py",
+        "_sources\\utils_178dfeb75ae1f5988c5b53a556e2d9c6.py"
+      ],
+      [
+        "wrappers.py",
+        "_sources\\wrappers_3e3dcf2f4286f5b6c5f4a29a5fe59bd5.py"
+      ]
+    ]
+  },
+  "fail_trace": [
+    "Traceback (most recent call last):\n",
+    "  File \"C:\\Users\\dota7\\AppData\\Local\\Programs\\Python\\Python38\\lib\\multiprocessing\\connection.py\", line 312, in _recv_bytes\n    nread, err = ov.GetOverlappedResult(True)\n",
+    "BrokenPipeError: [WinError 109] The pipe has been ended\n",
+    "\nDuring handling of the above exception, another exception occurred:\n\n",
+    "Traceback (most recent call last):\n",
+    "  File \"D:\\seac\\.venv\\lib\\site-packages\\sacred\\config\\captured_function.py\", line 42, in captured_function\n    result = wrapped(*args, **kwargs)\n",
+    "  File \"train.py\", line 181, in main\n    envs = make_vec_envs(\n",
+    "  File \"D:\\seac\\seac\\envs.py\", line 52, in make_vec_envs\n    envs = SubprocVecEnv(envs, start_method=\"spawn\")\n",
+    "  File \"D:\\seac\\.venv\\lib\\site-packages\\stable_baselines3\\common\\vec_env\\subproc_vec_env.py\", line 111, in __init__\n    observation_space, action_space = self.remotes[0].recv()\n",
+    "  File \"C:\\Users\\dota7\\AppData\\Local\\Programs\\Python\\Python38\\lib\\multiprocessing\\connection.py\", line 250, in recv\n    buf = self._recv_bytes()\n",
+    "  File \"C:\\Users\\dota7\\AppData\\Local\\Programs\\Python\\Python38\\lib\\multiprocessing\\connection.py\", line 321, in _recv_bytes\n    raise EOFError\n",
+    "EOFError\n"
+  ],
+  "heartbeat": "2025-04-25T09:06:05.794310",
+  "host": {
+    "ENV": {},
+    "cpu": "Unknown",
+    "gpus": {
+      "driver_version": "565.90",
+      "gpus": [
+        {
+          "model": "NVIDIA GeForce RTX 3050 Laptop GPU",
+          "persistence_mode": false,
+          "total_memory": 4096
+        }
+      ]
+    },
+    "hostname": "sw",
+    "os": [
+      "Windows",
+      "Windows-10-10.0.26100-SP0"
+    ],
+    "python_version": "3.8.0"
+  },
+  "meta": {
+    "command": "main",
+    "options": {
+      "--beat-interval": null,
+      "--capture": null,
+      "--comment": null,
+      "--debug": false,
+      "--enforce_clean": false,
+      "--file_storage": null,
+      "--force": false,
+      "--help": false,
+      "--loglevel": null,
+      "--mongo_db": null,
+      "--name": null,
+      "--pdb": false,
+      "--print-config": false,
+      "--priority": null,
+      "--queue": false,
+      "--s3": null,
+      "--sql": null,
+      "--tiny_db": null,
+      "--unobserved": false,
+      "COMMAND": null,
+      "UPDATE": [
+        "env_name=rware1"
+      ],
+      "help": false,
+      "with": true
+    }
+  },
+  "resources": [],
+  "result": null,
+  "start_time": "2025-04-25T09:06:00.534592",
+  "status": "FAILED",
+  "stop_time": "2025-04-25T09:06:05.796186"
+}

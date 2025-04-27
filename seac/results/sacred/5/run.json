@@ -1,0 +1,145 @@
+{
+  "artifacts": [],
+  "command": "main",
+  "experiment": {
+    "base_dir": "D:\\seac\\seac",
+    "dependencies": [
+      "Gymnasium==0.26.3",
+      "numpy==1.23.4",
+      "sacred==0.8.2",
+      "torch==2.0.0"
+    ],
+    "mainfile": "train.py",
+    "name": "train",
+    "repositories": [
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      }
+    ],
+    "sources": [
+      [
+        "a2c.py",
+        "_sources\\a2c_b555685ad1a763e89cc44b8191c1ce7d.py"
+      ],
+      [
+        "envs.py",
+        "_sources\\envs_2f7baf5c091bdc3f115fe041abffd070.py"
+      ],
+      [
+        "model.py",
+        "_sources\\model_23e4e7ede22f91a39b58331749bcc446.py"
+      ],
+      [
+        "storage.py",
+        "_sources\\storage_9ff83234f04ac6bff3639d85e59d9b14.py"
+      ],
+      [
+        "train.py",
+        "_sources\\train_f5d5858a43a4780822ccf656508f7ee1.py"
+      ],
+      [
+        "utils.py",
+        "_sources\\utils_178dfeb75ae1f5988c5b53a556e2d9c6.py"
+      ],
+      [
+        "wrappers.py",
+        "_sources\\wrappers_bcf53f1e8553c91fcdf5c107b08ab7ea.py"
+      ]
+    ]
+  },
+  "fail_trace": [
+    "Traceback (most recent call last):\n",
+    "  File \"D:\\seac\\.venv\\lib\\site-packages\\sacred\\config\\captured_function.py\", line 42, in captured_function\n    result = wrapped(*args, **kwargs)\n",
+    "  File \"train.py\", line 244, in main\n    agents[i].storage.insert(\n",
+    "  File \"D:\\seac\\seac\\storage.py\", line 69, in insert\n    self.rewards[self.step].copy_(rewards)\n",
+    "RuntimeError: output with shape [2, 1] doesn't match the broadcast shape [2, 2]\n"
+  ],
+  "heartbeat": "2025-04-25T08:01:19.863852",
+  "host": {
+    "ENV": {},
+    "cpu": "Unknown",
+    "gpus": {
+      "driver_version": "565.90",
+      "gpus": [
+        {
+          "model": "NVIDIA GeForce RTX 3050 Laptop GPU",
+          "persistence_mode": false,
+          "total_memory": 4096
+        }
+      ]
+    },
+    "hostname": "sw",
+    "os": [
+      "Windows",
+      "Windows-10-10.0.26100-SP0"
+    ],
+    "python_version": "3.8.0"
+  },
+  "meta": {
+    "command": "main",
+    "options": {
+      "--beat-interval": null,
+      "--capture": null,
+      "--comment": null,
+      "--debug": false,
+      "--enforce_clean": false,
+      "--file_storage": null,
+      "--force": false,
+      "--help": false,
+      "--loglevel": null,
+      "--mongo_db": null,
+      "--name": null,
+      "--pdb": false,
+      "--print-config": false,
+      "--priority": null,
+      "--queue": false,
+      "--s3": null,
+      "--sql": null,
+      "--tiny_db": null,
+      "--unobserved": false,
+      "COMMAND": null,
+      "UPDATE": [
+        "env_name=rware:rware-tiny-2ag-v2"
+      ],
+      "help": false,
+      "with": true
+    }
+  },
+  "resources": [],
+  "result": null,
+  "start_time": "2025-04-25T08:01:13.926420",
+  "status": "FAILED",
+  "stop_time": "2025-04-25T08:01:19.865916"
+}

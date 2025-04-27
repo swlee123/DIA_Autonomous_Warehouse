@@ -1,0 +1,138 @@
+{
+  "artifacts": [],
+  "command": "main",
+  "experiment": {
+    "base_dir": "D:\\seac\\seac",
+    "dependencies": [
+      "Gymnasium==0.26.3",
+      "numpy==1.23.4",
+      "sacred==0.8.2",
+      "torch==2.0.0"
+    ],
+    "mainfile": "train.py",
+    "name": "train",
+    "repositories": [
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      },
+      {
+        "commit": "ae3df57f19c1e929723a854f3cd27a5f6be46807",
+        "dirty": true,
+        "url": "https://github.com/kamilmlodzikowski/seac.git"
+      }
+    ],
+    "sources": [
+      [
+        "a2c.py",
+        "_sources\\a2c_b555685ad1a763e89cc44b8191c1ce7d.py"
+      ],
+      [
+        "envs.py",
+        "_sources\\envs_2f7baf5c091bdc3f115fe041abffd070.py"
+      ],
+      [
+        "model.py",
+        "_sources\\model_23e4e7ede22f91a39b58331749bcc446.py"
+      ],
+      [
+        "storage.py",
+        "_sources\\storage_19741b4736f9c1003c6d7a41db5307f5.py"
+      ],
+      [
+        "train.py",
+        "_sources\\train_3e7f07121e4c5edcb504d02f7859d850.py"
+      ],
+      [
+        "utils.py",
+        "_sources\\utils_178dfeb75ae1f5988c5b53a556e2d9c6.py"
+      ],
+      [
+        "wrappers.py",
+        "_sources\\wrappers_bcf53f1e8553c91fcdf5c107b08ab7ea.py"
+      ]
+    ]
+  },
+  "heartbeat": "2025-04-25T08:49:20.618735",
+  "host": {
+    "ENV": {},
+    "cpu": "Unknown",
+    "gpus": {
+      "driver_version": "565.90",
+      "gpus": [
+        {
+          "model": "NVIDIA GeForce RTX 3050 Laptop GPU",
+          "persistence_mode": false,
+          "total_memory": 4096
+        }
+      ]
+    },
+    "hostname": "sw",
+    "os": [
+      "Windows",
+      "Windows-10-10.0.26100-SP0"
+    ],
+    "python_version": "3.8.0"
+  },
+  "meta": {
+    "command": "main",
+    "options": {
+      "--beat-interval": null,
+      "--capture": null,
+      "--comment": null,
+      "--debug": false,
+      "--enforce_clean": false,
+      "--file_storage": null,
+      "--force": false,
+      "--help": false,
+      "--loglevel": null,
+      "--mongo_db": null,
+      "--name": null,
+      "--pdb": false,
+      "--print-config": false,
+      "--priority": null,
+      "--queue": false,
+      "--s3": null,
+      "--sql": null,
+      "--tiny_db": null,
+      "--unobserved": false,
+      "COMMAND": null,
+      "UPDATE": [
+        "env_name=rware:rware-tiny-2ag-v2"
+      ],
+      "help": false,
+      "with": true
+    }
+  },
+  "resources": [],
+  "result": null,
+  "start_time": "2025-04-25T08:46:04.882888",
+  "status": "INTERRUPTED",
+  "stop_time": "2025-04-25T08:49:20.626294"
+}

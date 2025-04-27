@@ -1,0 +1,2 @@
+algorithm,env_name,num_agents,reward,reward_per_ticks,ticks
+SEAC,Normal,2,2.0,0.006666666666666667,300
