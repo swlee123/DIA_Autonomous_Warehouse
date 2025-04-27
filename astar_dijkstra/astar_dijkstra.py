@@ -61,7 +61,7 @@ def a_star(start, goal, grid_size, obstacles):
     closed_set = set()
     nodes = {start: start_node}
 
-    print(f"Start: {start}, Goal: {goal}, Obstacles: {obstacles}")
+    # print(f"Start: {start}, Goal: {goal}, Obstacles: {obstacles}")
     while open_list:
         current = heappop(open_list)
         
@@ -72,7 +72,7 @@ def a_star(start, goal, grid_size, obstacles):
                 path.append(current.position)
                 current = current.parent
             
-            print(f"Path found: {path}")
+            # print(f"Path found: {path}")
             return path[::-1]
 
         closed_set.add(current.position)
@@ -163,7 +163,7 @@ def get_obstacles(env,i):
     agent = env.agents[i]
     
 
-    print(f"in obstacle function Agent {i} , carrying shelf: {agent.carrying_shelf}")
+    # print(f"in obstacle function Agent {i} , carrying shelf: {agent.carrying_shelf}")
     
     
     # Get shelf positions from the environment grid
@@ -211,7 +211,7 @@ def get_next_action(current_pos, next_pos, agent):
         desired_direction = Direction.UP.value
     else:
         # this is where we detect moves that is not valid / collision occured before 
-        print("Invalid move: next_pos must differ from current_pos by 1 unit.")        
+        # print("Invalid move: next_pos must differ from current_pos by 1 unit.")        
 
         return Action.RECAL.value
     
@@ -288,11 +288,11 @@ def find_nearest_shelf_with_object(env, current_pos):
     # Filter shelves that are in the request queue (target shelves to bring to goal point)
     requested_shelves = [shelf for shelf in shelves if shelf in request_queue and shelf.taken == False]
     
-    for s in request_queue:
-        print(f"Request Queue: ({s.x}, {s.y}), Shelf.taken {s.taken}")
+    # for s in request_queue:
+    #     print(f"Request Queue: ({s.x}, {s.y}), Shelf.taken {s.taken}")
     
-    for shelf in requested_shelves:
-        print(f"Shelf Position: ({shelf.x}, {shelf.y}), Shelf.taken {shelf.taken} In Request Queue: {shelf in request_queue}")
+    # for shelf in requested_shelves:
+    #     print(f"Shelf Position: ({shelf.x}, {shelf.y}), Shelf.taken {shelf.taken} In Request Queue: {shelf in request_queue}")
    
 
     if not requested_shelves:
@@ -310,7 +310,7 @@ def find_nearest_shelf_with_object(env, current_pos):
     
     nearest_shelf.taken = True
     
-    print(f"Nearest Shelf Position: ({nearest_shelf.x}, {nearest_shelf.y})")
+    # print(f"Nearest Shelf Position: ({nearest_shelf.x}, {nearest_shelf.y})")
     return nearest_shelf
 
 def random_wait_after_collision():
@@ -416,14 +416,14 @@ def run_warehouse_with(algorithm,TICKS,interval,agent_count=1,shelf_column=3,col
 
 
 
-            print(f"Agent {i} Current Position: {current_pos}, State: {agent_state[i]}")
+            # print(f"Agent {i} Current Position: {current_pos}, State: {agent_state[i]}")
             obstacles = get_obstacles(env,i)
             # If agent is not carrying a shelf, find nearest shelf with object
             
             if agent.random_wait > 0:
                 actions[i] = Action.NOOP.value
                 agent.random_wait -= 1
-                print(f"Agent {i} is waiting for {agent.random_wait} ticks.")
+                # print(f"Agent {i} is waiting for {agent.random_wait} ticks.")
                 
             # check if there is a path to follow 
             elif agent_paths[i] != []:
@@ -453,7 +453,7 @@ def run_warehouse_with(algorithm,TICKS,interval,agent_count=1,shelf_column=3,col
                     
                     
                     
-                print(f"Current Pos : {current_pos} Next pos: {target_pos[i]}, Action: {action_names[actions[i]]}")
+                # print(f"Current Pos : {current_pos} Next pos: {target_pos[i]}, Action: {action_names[actions[i]]}")
                 
                 
                 if actions[i] is Action.FORWARD.value:
@@ -461,7 +461,7 @@ def run_warehouse_with(algorithm,TICKS,interval,agent_count=1,shelf_column=3,col
                     # collision handling and reroute
                     if target_pos[i] in occupied_positions:
                         
-                        print("Collision detected! Rerouting...")
+                        # print("Collision detected! Rerouting...")
                         
                         collision += 1
                         
@@ -474,7 +474,7 @@ def run_warehouse_with(algorithm,TICKS,interval,agent_count=1,shelf_column=3,col
                         new_path = algo_function(current_pos, target_pos[i], env.grid_size, temp_obstacles)[1:]
                             
                         if not new_path:
-                            print("No valid new path found!")
+                            # print("No valid new path found!")
                             actions[i] = random_action()
                             continue
                             
@@ -499,7 +499,7 @@ def run_warehouse_with(algorithm,TICKS,interval,agent_count=1,shelf_column=3,col
                 
                 # agent reached the shelf location and not carrying shelf, pick up shelf 
                 if agent_state[i] == 1 and current_pos == target_pos[i] and agent.carrying_shelf is None:
-                    print("Reached shelf. Loading...")
+                    # print("Reached shelf. Loading...")
                     actions[i] = Action.TOGGLE_LOAD.value
                     agent_state[i] = 2
                 
@@ -510,13 +510,13 @@ def run_warehouse_with(algorithm,TICKS,interval,agent_count=1,shelf_column=3,col
              
                 elif agent_state[i] == 2 and current_pos in goals:
                     # handle unloading 
-                    print("Unloading shelf at goal...")
+                    # print("Unloading shelf at goal...")
                     actions[i] = Action.TOGGLE_LOAD.value
                     agent_state[i] = 4
 
                 # agent returned to shelf location and carrying shelf , unload
                 elif agent_state[i] == 4 and current_pos == saved_shelf_pos[i] and agent.carrying_shelf:
-                    print("Returned shelf. Unloading shelf at original place...")
+                    # print("Returned shelf. Unloading shelf at original place...")
                     actions[i] = Action.TOGGLE_LOAD.value
                     
                     # set the shelf.taken in request queue to False
@@ -545,7 +545,7 @@ def run_warehouse_with(algorithm,TICKS,interval,agent_count=1,shelf_column=3,col
                         if target_shelf[i]:
                             target_pos[i] = (target_shelf[i].x, target_shelf[i].y)
                             saved_shelf_pos[i] = target_pos[i]
-                            print(f"[STATE 1] Moving to shelf at {target_pos[i]}")
+                            # print(f"[STATE 1] Moving to shelf at {target_pos[i]}")
                             
                     
                         else:
@@ -557,13 +557,13 @@ def run_warehouse_with(algorithm,TICKS,interval,agent_count=1,shelf_column=3,col
                         # Carrying a loaded shelf, moving to goal
 
                         target_pos[i] = min(goals, key=lambda g: manhattan_distance(current_pos, (g[0], g[1])))
-                        print(f"[STATE 2] Moving to goal at {target_pos[i]}")
+                        # print(f"[STATE 2] Moving to goal at {target_pos[i]}")
 
                     elif agent_state[i] == 3:
                         # At goal with loaded shelf, need unload
                         
                         # handle unloading 
-                        print(f"[STATE 3] At goal. Unloading shelf...")
+                        # print(f"[STATE 3] At goal. Unloading shelf...")
                         # input(agent_paths[i])
                         agent_state[i] = 4
                         continue
@@ -571,7 +571,7 @@ def run_warehouse_with(algorithm,TICKS,interval,agent_count=1,shelf_column=3,col
                     elif agent_state[i] == 4:
                         # Carrying a shelf without load, need to move to shelf location to put back the shelf
                         target_pos[i] = (saved_shelf_pos[i][0], saved_shelf_pos[i][1])
-                        print(f"[STATE 4] Returning shelf to original location at {target_pos[i]}")
+                        # print(f"[STATE 4] Returning shelf to original location at {target_pos[i]}")
         
                     # Find path to target pos 
                     path = a_star(current_pos, target_pos[i], env.grid_size, obstacles)[1:]

@@ -7,22 +7,22 @@ ALGORITHMS:
   - "Dijkstra"
 
 ENVIRONMENTS:
-  # Normal:
-  #   shelf_column: 3
-  #   column_height: 8
-  #   shelf_rows: 2
-  #   agent_count: 2
+  Normal:
+    shelf_column: 3
+    column_height: 8
+    shelf_rows: 2
+    agent_count: 2
 
-  # Obstacle:
-  #   shelf_column: 3
-  #   column_height: 8
-  #   shelf_rows: 2
-  #   agent_count: 2
-  #   obstacles_loc:
-  #     - [4,10]
-  #     - [5,10]
-  #     - [4,12]
-  #     - [5,12]
+  Obstacle:
+    shelf_column: 3
+    column_height: 8
+    shelf_rows: 2
+    agent_count: 2
+    obstacles_loc:
+      - [4,10]
+      - [5,10]
+      - [4,12]
+      - [5,12]
 
   Human:
     shelf_column: 3
@@ -31,14 +31,14 @@ ENVIRONMENTS:
     agent_count: 2
     human_count: 1
 
-  # Obstacle_Human:
-  #   shelf_column: 3
-  #   column_height: 8
-  #   shelf_rows: 2
-  #   agent_count: 2
-  #   human_count: 1
-  #   obstacles_loc:
-  #     - [4,10]
-  #     - [5,10]
-  #     - [4,12]
-  #     - [5,12]
+  Obstacle_Human:
+    shelf_column: 3
+    column_height: 8
+    shelf_rows: 2
+    agent_count: 2
+    human_count: 1
+    obstacles_loc:
+      - [4,10]
+      - [5,10]
+      - [4,12]
+      - [5,12]

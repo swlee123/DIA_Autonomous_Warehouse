@@ -15,7 +15,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Filippos Christianos",
     url="https://github.com/semitable/robotic-warehouse",
-    packages=find_packages(exclude=["contrib", "docs", "tests"]),
+    packages=find_packages(exclude=["contrib", "docs", "tests","astar_dijkstra"]),
     classifiers=[
         # Indicate who your project is intended for
         "Intended Audience :: Developers",
